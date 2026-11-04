@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
@@ -59,6 +60,7 @@
   <div id="lobbyScreen" class="min-h-screen flex items-center justify-center p-3 sm:p-6 md:p-8 safe-top safe-bottom">
     <div class="bg-white/95 backdrop-blur-xl w-full max-w-xl md:max-w-4xl rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 md:p-10 border border-white/50">
       
+      <!-- Encabezado con Icono y Título -->
       <div class="text-center mb-6 sm:mb-8">
         <div class="inline-flex p-3 sm:p-4 rounded-2xl bg-indigo-100 text-indigo-600 mb-2 sm:mb-3 shadow-inner">
           <img src="icono.png" alt="Super Rifa" class="w-12 h-12 rounded-xl object-cover shadow" onerror="this.style.display='none'; document.getElementById('fallbackIcon').style.display='block';">
@@ -66,8 +68,15 @@
         </div>
         <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">SUPER RIFA</h1>
         <p class="text-slate-500 mt-1 text-xs sm:text-sm md:text-base font-medium">Gestión y ventas colaborativas en tiempo real en la nube</p>
+
+        <!-- Botón de Instalación PWA (Android / Chrome) -->
+        <button id="btnInstalarPWA" class="hidden mt-4 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition items-center justify-center gap-2 mx-auto touch-manipulation">
+          <i class="fa-solid fa-download"></i>
+          <span>Instalar SUPER RIFA en el Celular</span>
+        </button>
       </div>
 
+      <!-- Tarjetas de Acceso -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-stretch">
         
         <!-- Tarjeta: Unirse -->
@@ -704,6 +713,41 @@
       dashboardScreen.classList.add('hidden');
       dashboardScreen.classList.remove('flex');
       lobbyScreen.classList.remove('hidden');
+    }
+  </script>
+
+  <!-- ================= REGISTRO SERVICE WORKER E INSTALACIÓN PWA ================= -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.warn('Error registrando service worker:', err);
+        });
+      });
+    }
+
+    let deferredPrompt;
+    const btnInstalar = document.getElementById('btnInstalarPWA');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (btnInstalar) {
+        btnInstalar.classList.remove('hidden');
+        btnInstalar.classList.add('flex');
+      }
+    });
+
+    if (btnInstalar) {
+      btnInstalar.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          btnInstalar.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
     }
   </script>
 </body>
