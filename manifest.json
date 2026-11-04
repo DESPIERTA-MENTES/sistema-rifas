@@ -1,0 +1,18 @@
+JSON
+{
+  "name": "Super Rifa Colaborativa",
+  "short_name": "SUPER RIFA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "description": "Sistema de gestión de rifas en tiempo real",
+  "icons": [
+    {
+      "src": "icono.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

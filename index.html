@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SUPER RIFA - Sistema Colaborativo</title>
+
+  <!-- ================= PWA & INSTALACIÓN MÓVIL ================= -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" type="image/png" href="icono.png">
+  
+  <!-- Soporte específico para iOS (Apple) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SUPER RIFA">
+  <link rel="apple-touch-icon" href="icono.png">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animated-bg {
+      background: linear-gradient(-45deg, #312e81, #4f46e5, #9333ea, #db2777);
+      background-size: 400% 400%;
+      animation: gradientBG 14s ease infinite;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(148, 163, 184, 0.5);
+      border-radius: 9999px;
+    }
+    .safe-top {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    .safe-bottom {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+  </style>
+</head>
+<body class="animated-bg min-h-screen text-slate-800 font-sans flex flex-col antialiased selection:bg-pink-500 selection:text-white">
+
+  <!-- ================= LOBBY SCREEN (CREAR / UNIRSE) ================= -->
+  <div id="lobbyScreen" class="min-h-screen flex items-center justify-center p-3 sm:p-6 md:p-8 safe-top safe-bottom">
+    <div class="bg-white/95 backdrop-blur-xl w-full max-w-xl md:max-w-4xl rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 md:p-10 border border-white/50">
+      
+      <div class="text-center mb-6 sm:mb-8">
+        <div class="inline-flex p-3 sm:p-4 rounded-2xl bg-indigo-100 text-indigo-600 mb-2 sm:mb-3 shadow-inner">
+          <img src="icono.png" alt="Super Rifa" class="w-12 h-12 rounded-xl object-cover shadow" onerror="this.style.display='none'; document.getElementById('fallbackIcon').style.display='block';">
+          <i id="fallbackIcon" class="fa-solid fa-ticket-simple text-3xl sm:text-4xl hidden"></i>
+        </div>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">SUPER RIFA</h1>
+        <p class="text-slate-500 mt-1 text-xs sm:text-sm md:text-base font-medium">Gestión y ventas colaborativas en tiempo real en la nube</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-stretch">
+        
+        <!-- Tarjeta: Unirse -->
+        <div class="bg-slate-50/90 rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2.5 text-indigo-700 font-black text-base sm:text-lg mb-1">
+              <i class="fa-solid fa-right-to-bracket text-lg"></i>
+              <h2>Unirse a una Rifa</h2>
+            </div>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">Ingresa el código que te entregó el organizador para empezar a vender.</p>
+            
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Código de la Rifa</label>
+            <input type="text" id="joinRifaId" placeholder="EJ: RIFA001" 
+                   class="w-full px-3.5 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none uppercase font-black text-slate-800 text-base sm:text-sm tracking-wider transition bg-white shadow-inner">
+          </div>
+          <button id="btnJoin" 
+                  class="mt-4 sm:mt-6 w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition duration-150 flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation">
+            <span>Ingresar a Vender</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Tarjeta: Crear Nueva -->
+        <div class="bg-slate-50/90 rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm">
+          <div class="flex items-center gap-2.5 text-pink-600 font-black text-base sm:text-lg mb-1">
+            <i class="fa-solid fa-circle-plus text-lg"></i>
+            <h2>Crear Nueva Rifa</h2>
+          </div>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">Configura la rifa por única vez y comparte el código con tu equipo de vendedores.</p>
+          
+          <form id="createForm" class="space-y-3">
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Código Identificador (ID)</label>
+              <input type="text" id="newRifaId" required placeholder="EJ: RIFA-BENEFICIO-01" 
+                     class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-pink-500 outline-none uppercase font-bold text-slate-800 text-base sm:text-sm bg-white">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Título o Beneficiario</label>
+              <input type="text" id="newTitulo" required placeholder="A beneficio de Bomberos de Chile" 
+                     class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-pink-500 outline-none font-medium text-slate-800 text-base sm:text-sm bg-white">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Total Números</label>
+                <input type="number" id="newCantidad" required min="5" max="10000" value="100" 
+                       class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-pink-500 outline-none text-slate-800 text-base sm:text-sm bg-white font-semibold">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">PIN Admin (4 dígitos)</label>
+                <input type="password" id="newPin" required maxlength="6" placeholder="1234" 
+                       class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-pink-500 outline-none tracking-widest text-slate-800 text-base sm:text-sm bg-white text-center font-bold">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Fecha del Sorteo</label>
+              <input type="date" id="newFecha" required 
+                     class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-pink-500 outline-none text-slate-800 text-base sm:text-sm bg-white font-medium">
+            </div>
+            <button type="submit" 
+                    class="w-full mt-2 py-3.5 bg-pink-600 hover:bg-pink-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-pink-600/30 transition duration-150 flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation">
+              <i class="fa-solid fa-rocket text-sm"></i>
+              <span>Crear e Iniciar Rifa</span>
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD SCREEN (GRILLA DE VENTAS) ================= -->
+  <div id="dashboardScreen" class="hidden flex-col min-h-screen">
+    
+    <!-- Navbar Superior -->
+    <header class="bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-sm border-b border-white/40 px-3 sm:px-6 md:px-8 py-3 safe-top">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap mb-0.5">
+            <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg text-[10px] sm:text-xs font-black tracking-wider uppercase" id="badgeRifaId">RIFA</span>
+            <span class="text-[11px] sm:text-xs font-semibold text-slate-500 flex items-center gap-1">
+              <i class="fa-regular fa-calendar text-[10px]"></i> <span id="lblFecha">--/--/----</span>
+            </span>
+          </div>
+          <h1 id="lblTitulo" class="text-lg sm:text-xl md:text-2xl font-black text-slate-900 truncate">Cargando Rifa...</h1>
+        </div>
+
+        <!-- Controles y Acciones -->
+        <div class="flex items-center justify-between md:justify-end gap-2 flex-wrap sm:flex-nowrap">
+          
+          <!-- Barra de Progreso -->
+          <div class="bg-slate-100/90 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2.5 flex-1 sm:flex-initial">
+            <div class="min-w-[65px]">
+              <div class="text-[9px] uppercase font-bold text-slate-500 leading-none mb-0.5">Vendidos</div>
+              <div class="text-xs font-black text-slate-800 leading-none">
+                <span id="lblVendidos">0</span>/<span id="lblTotal">0</span> <span class="text-slate-400 font-medium">(<span id="lblPorcentaje">0%</span>)</span>
+              </div>
+            </div>
+            <div class="w-12 sm:w-16 bg-slate-200 h-2 rounded-full overflow-hidden shrink-0">
+              <div id="progressBar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btnExport" title="Descargar Excel" 
+                    class="px-2.5 sm:px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 touch-manipulation">
+              <i class="fa-solid fa-file-excel"></i>
+              <span class="hidden sm:inline">Excel</span>
+            </button>
+
+            <button id="btnOpenSorteo" title="Abrir Sorteo Digital" 
+                    class="px-2.5 sm:px-3.5 py-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition flex items-center gap-1.5 touch-manipulation">
+              <i class="fa-solid fa-trophy"></i>
+              <span>Sorteo</span>
+            </button>
+
+            <button id="btnLeave" title="Salir de la Rifa" 
+                    class="p-2 sm:px-3 sm:py-2 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition touch-manipulation">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="max-w-7xl mx-auto w-full p-3 sm:p-6 flex-1 flex flex-col safe-bottom">
+      
+      <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-sm mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border border-white/60">
+        <div class="relative flex-1 max-w-full sm:max-w-xs">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+          <input type="text" id="searchInput" placeholder="Buscar número o comprador..." 
+                 class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+        <div class="flex items-center justify-between sm:justify-end gap-3 text-xs font-bold shrink-0">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-white border border-slate-400"></span> Disponible
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Vendido
+          </span>
+        </div>
+      </div>
+
+      <div id="numbersGrid" 
+           class="grid grid-cols-3 min-[420px]:grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2 sm:gap-2.5 auto-rows-max flex-1">
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODAL: REGISTRAR VENTA ================= -->
+  <div id="modalVenta" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 sm:p-6 my-auto max-h-[90dvh] flex flex-col border border-slate-100">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm" id="modalVentaBadge">0</span>
+          <h3 class="text-base sm:text-lg font-black text-slate-900">Vender Número</h3>
+        </div>
+        <button id="closeModalVenta" class="p-1.5 text-slate-400 hover:text-slate-600 active:scale-95"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="formVenta" class="space-y-4 overflow-y-auto custom-scroll pr-1">
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Nombre Completo</label>
+          <input type="text" id="inputNombre" required placeholder="Ej: Pedro Valdivia" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-base sm:text-sm text-slate-800 bg-white">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Teléfono de Contacto</label>
+          <input type="tel" id="inputTelefono" required placeholder="Ej: +56 9 1234 5678" 
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-base sm:text-sm text-slate-800 bg-white">
+        </div>
+        <button type="submit" id="btnGuardarVenta" 
+                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation">
+          <i class="fa-solid fa-check"></i>
+          <span>Confirmar Venta</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: DETALLES / ADMIN DESBLOQUEO ================= -->
+  <div id="modalAdmin" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-5 sm:p-6 my-auto max-h-[90dvh] flex flex-col border border-slate-100">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm" id="modalAdminBadge">0</span>
+          <h3 class="text-base sm:text-lg font-black text-slate-900">Número Vendido</h3>
+        </div>
+        <button id="closeModalAdmin" class="p-1.5 text-slate-400 hover:text-slate-600 active:scale-95"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="overflow-y-auto custom-scroll pr-1 space-y-4">
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-sm space-y-2">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Comprador</span>
+            <div id="lblDetalleNombre" class="font-bold text-slate-800 text-base break-words">--</div>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block leading-tight">Contacto</span>
+            <div id="lblDetalleTelefono" class="font-bold text-indigo-600 text-base break-all">--</div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-200 pt-3">
+          <p class="text-xs text-slate-500 font-medium mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-lock text-amber-500"></i>
+            <span>Requiere <strong>PIN Admin</strong> para modificar o liberar:</span>
+          </p>
+          <div class="space-y-2.5">
+            <input type="password" id="inputAdminPin" placeholder="PIN" maxlength="6" 
+                   class="w-full px-3 py-2 text-center tracking-widest font-black rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-base sm:text-sm bg-white">
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnLiberarNumero" 
+                      class="py-2.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 font-bold rounded-xl border border-rose-200 text-xs transition flex items-center justify-center gap-1 touch-manipulation">
+                <i class="fa-solid fa-trash-can"></i> Liberar
+              </button>
+              <button id="btnGuardarEdicion" 
+                      class="py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-1 touch-manipulation">
+                <i class="fa-solid fa-pen-to-square"></i> Editar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: GRAN SORTEO DIGITAL ================= -->
+  <div id="modalSorteo" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm sm:max-w-md w-full p-5 sm:p-8 text-center relative my-auto max-h-[90dvh] overflow-y-auto custom-scroll border border-white/20">
+      <button id="closeModalSorteo" class="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-600 active:scale-95"><i class="fa-solid fa-xmark text-xl"></i></button>
+      
+      <div class="inline-block p-3 sm:p-4 rounded-3xl bg-purple-100 text-purple-600 mb-3 shadow-inner">
+        <i class="fa-solid fa-crown text-3xl sm:text-4xl"></i>
+      </div>
+      <h3 class="text-xl sm:text-2xl font-black text-slate-900">Gran Sorteo</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-5">El sistema sortea al azar exclusivamente entre los números comprados.</p>
+
+      <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-5 sm:p-6 shadow-2xl mb-5 border border-indigo-500/30">
+        <div class="text-[10px] font-mono tracking-widest text-indigo-300 uppercase mb-1">Número Ganador</div>
+        <div id="sorteoNumberDisplay" class="text-5xl sm:text-6xl font-black font-mono tracking-wider text-amber-400 min-h-[60px] flex items-center justify-center">
+          --
+        </div>
+        <div id="sorteoWinnerInfo" class="mt-4 pt-4 border-t border-indigo-900/60 hidden">
+          <div class="text-sm sm:text-base font-bold text-white break-words" id="sorteoWinnerName">---</div>
+          <div class="text-xs sm:text-sm text-indigo-300 font-mono mt-0.5 break-all" id="sorteoWinnerPhone">---</div>
+        </div>
+      </div>
+
+      <button id="btnRunSorteo" 
+              class="w-full py-3.5 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 active:scale-[0.98] text-white font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-purple-600/30 transition duration-150 flex items-center justify-center gap-2 touch-manipulation">
+        <i class="fa-solid fa-dice"></i>
+        <span>¡GIRAR RULETA!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= LÓGICA DE FIREBASE ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc, 
+      updateDoc, 
+      deleteField, 
+      onSnapshot, 
+      runTransaction 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCl9ob-cyoZzLV7T4-rnjYoOiii6xmP7to",
+      authDomain: "super-rifa-ae63f.firebaseapp.com",
+      projectId: "super-rifa-ae63f",
+      storageBucket: "super-rifa-ae63f.firebasestorage.app",
+      messagingSenderId: "963864790506",
+      appId: "1:963864790506:web:d6a125e7a667ea2eb01e93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentRifaId = null;
+    let rifaData = null;
+    let unsubscribeFirestore = null;
+    let activeSelectedNumber = null;
+
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    const numbersGrid = document.getElementById('numbersGrid');
+    const searchInput = document.getElementById('searchInput');
+
+    const modalVenta = document.getElementById('modalVenta');
+    const modalAdmin = document.getElementById('modalAdmin');
+    const modalSorteo = document.getElementById('modalSorteo');
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRifa = urlParams.get('rifa');
+      if (urlRifa) {
+        joinRifa(urlRifa.toUpperCase().trim());
+      }
+    });
+
+    document.getElementById('btnJoin').addEventListener('click', () => {
+      const id = document.getElementById('joinRifaId').value.trim().toUpperCase();
+      if (!id) return alert('Por favor, ingresa el código de la rifa.');
+      joinRifa(id);
+    });
+
+    async function joinRifa(id) {
+      try {
+        const docRef = doc(db, "rifas", id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          return alert(`La rifa "${id}" no existe. Verifica el código.`);
+        }
+        currentRifaId = id;
+        window.history.replaceState({}, '', `?rifa=${id}`);
+        iniciarEscuchaTiempoReal();
+      } catch (err) {
+        alert("Error de conexión: " + err.message);
+      }
+    }
+
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('newRifaId').value.trim().toUpperCase();
+      const titulo = document.getElementById('newTitulo').value.trim();
+      const cantidad = parseInt(document.getElementById('newCantidad').value, 10);
+      const pin = document.getElementById('newPin').value.trim();
+      const fecha = document.getElementById('newFecha').value;
+
+      if (!id || !titulo || !cantidad || !pin || !fecha) {
+        return alert('Por favor, completa todos los campos.');
+      }
+
+      try {
+        const docRef = doc(db, "rifas", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return alert(`El código "${id}" ya existe. Elige otro ID o únete a la existente.`);
+        }
+
+        const nuevaRifa = {
+          id,
+          titulo,
+          totalNumeros: cantidad,
+          pin,
+          fecha,
+          creadoEn: new Date().toISOString(),
+          numeros: {}
+        };
+
+        await setDoc(docRef, nuevaRifa);
+        currentRifaId = id;
+        window.history.replaceState({}, '', `?rifa=${id}`);
+        iniciarEscuchaTiempoReal();
+      } catch (err) {
+        alert("Error al crear la rifa: " + err.message);
+      }
+    });
+
+    function iniciarEscuchaTiempoReal() {
+      lobbyScreen.classList.add('hidden');
+      dashboardScreen.classList.remove('hidden');
+      dashboardScreen.classList.add('flex');
+
+      if (unsubscribeFirestore) unsubscribeFirestore();
+
+      const docRef = doc(db, "rifas", currentRifaId);
+      unsubscribeFirestore = onSnapshot(docRef, (docSnap) => {
+        if (!docSnap.exists()) {
+          alert("Esta rifa ya no se encuentra disponible.");
+          salirAlLobby();
+          return;
+        }
+        rifaData = docSnap.data();
+        actualizarHeader();
+        renderizarGrilla();
+      }, (error) => {
+        console.error("Firestore error:", error);
+      });
+    }
+
+    function actualizarHeader() {
+      document.getElementById('badgeRifaId').textContent = rifaData.id;
+      document.getElementById('lblTitulo').textContent = rifaData.titulo;
+      document.getElementById('lblFecha').textContent = rifaData.fecha;
+
+      const vendidos = Object.keys(rifaData.numeros || {}).length;
+      const total = rifaData.totalNumeros;
+      const porcentaje = Math.round((vendidos / total) * 100);
+
+      document.getElementById('lblVendidos').textContent = vendidos;
+      document.getElementById('lblTotal').textContent = total;
+      document.getElementById('lblPorcentaje').textContent = `${porcentaje}%`;
+      document.getElementById('progressBar').style.width = `${porcentaje}%`;
+    }
+
+    function renderizarGrilla() {
+      const filtro = searchInput.value.toLowerCase().trim();
+      numbersGrid.innerHTML = '';
+
+      const total = rifaData.totalNumeros;
+      const vendidosMap = rifaData.numeros || {};
+
+      for (let i = 1; i <= total; i++) {
+        const strNum = String(i);
+        const dataVenta = vendidosMap[strNum];
+        const estaVendido = Boolean(dataVenta);
+
+        if (filtro) {
+          const matchNum = strNum.includes(filtro);
+          const matchNombre = estaVendido && dataVenta.nombre.toLowerCase().includes(filtro);
+          if (!matchNum && !matchNombre) continue;
+        }
+
+        const btn = document.createElement('button');
+        btn.className = `min-h-[58px] sm:min-h-[64px] p-2 rounded-2xl flex flex-col items-center justify-center font-bold transition-all transform active:scale-95 shadow-sm border touch-manipulation ${
+          estaVendido 
+            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-400/80 shadow-emerald-500/20' 
+            : 'bg-white/95 hover:bg-indigo-50 text-slate-800 hover:text-indigo-600 border-white/80 hover:border-indigo-200'
+        }`;
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-1 leading-none">
+            <span class="text-sm sm:text-base font-black">${strNum}</span>
+            ${estaVendido ? '<i class="fa-solid fa-lock text-[9px] text-white/90"></i>' : ''}
+          </div>
+          ${estaVendido 
+            ? `<span class="text-[10px] truncate max-w-[90%] font-medium opacity-90 mt-1 leading-tight">${dataVenta.nombre.split(' ')[0]}</span>`
+            : '<span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold mt-1 leading-tight">Libre</span>'
+          }
+        `;
+
+        btn.addEventListener('click', () => {
+          activeSelectedNumber = strNum;
+          if (estaVendido) {
+            abrirModalAdmin(strNum, dataVenta);
+          } else {
+            abrirModalVenta(strNum);
+          }
+        });
+
+        numbersGrid.appendChild(btn);
+      }
+    }
+
+    searchInput.addEventListener('input', renderizarGrilla);
+
+    function abrirModalVenta(num) {
+      document.getElementById('modalVentaBadge').textContent = num;
+      document.getElementById('inputNombre').value = '';
+      document.getElementById('inputTelefono').value = '';
+      modalVenta.classList.remove('hidden');
+    }
+
+    document.getElementById('closeModalVenta').addEventListener('click', () => modalVenta.classList.add('hidden'));
+
+    document.getElementById('formVenta').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById('inputNombre').value.trim();
+      const telefono = document.getElementById('inputTelefono').value.trim();
+      const num = activeSelectedNumber;
+
+      const btnSubmit = document.getElementById('btnGuardarVenta');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Registrando...`;
+
+      try {
+        const docRef = doc(db, "rifas", currentRifaId);
+        await runTransaction(db, async (transaction) => {
+          const sfDoc = await transaction.get(docRef);
+          if (!sfDoc.exists()) throw new Error("La rifa no existe");
+          
+          const data = sfDoc.data();
+          if (data.numeros && data.numeros[num]) {
+            throw new Error(`¡El número #${num} acaba de ser vendido por otro vendedor!`);
+          }
+
+          transaction.update(docRef, {
+            [`numeros.${num}`]: {
+              nombre,
+              telefono,
+              fechaVenta: new Date().toISOString()
+            }
+          });
+        });
+
+        modalVenta.classList.add('hidden');
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-check"></i> <span>Confirmar Venta</span>`;
+      }
+    });
+
+    function abrirModalAdmin(num, dataVenta) {
+      document.getElementById('modalAdminBadge').textContent = num;
+      document.getElementById('lblDetalleNombre').textContent = dataVenta.nombre;
+      document.getElementById('lblDetalleTelefono').textContent = dataVenta.telefono;
+      document.getElementById('inputAdminPin').value = '';
+      modalAdmin.classList.remove('hidden');
+    }
+
+    document.getElementById('closeModalAdmin').addEventListener('click', () => modalAdmin.classList.add('hidden'));
+
+    document.getElementById('btnLiberarNumero').addEventListener('click', async () => {
+      const pinIngresado = document.getElementById('inputAdminPin').value.trim();
+      if (pinIngresado !== rifaData.pin) {
+        return alert('PIN de Administrador incorrecto.');
+      }
+
+      if (!confirm(`¿Deseas liberar el número #${activeSelectedNumber} y dejarlo disponible nuevamente?`)) return;
+
+      try {
+        const docRef = doc(db, "rifas", currentRifaId);
+        await updateDoc(docRef, {
+          [`numeros.${activeSelectedNumber}`]: deleteField()
+        });
+        modalAdmin.classList.add('hidden');
+      } catch (err) {
+        alert("Error al liberar: " + err.message);
+      }
+    });
+
+    document.getElementById('btnGuardarEdicion').addEventListener('click', async () => {
+      const pinIngresado = document.getElementById('inputAdminPin').value.trim();
+      if (pinIngresado !== rifaData.pin) {
+        return alert('PIN de Administrador incorrecto.');
+      }
+
+      const nuevoNombre = prompt("Nuevo nombre del comprador:", rifaData.numeros[activeSelectedNumber]?.nombre || "");
+      if (nuevoNombre === null) return;
+      const nuevoTel = prompt("Nuevo teléfono de contacto:", rifaData.numeros[activeSelectedNumber]?.telefono || "");
+      if (nuevoTel === null) return;
+
+      try {
+        const docRef = doc(db, "rifas", currentRifaId);
+        await updateDoc(docRef, {
+          [`numeros.${activeSelectedNumber}.nombre`]: nuevoNombre.trim(),
+          [`numeros.${activeSelectedNumber}.telefono`]: nuevoTel.trim()
+        });
+        modalAdmin.classList.add('hidden');
+      } catch (err) {
+        alert("Error al editar: " + err.message);
+      }
+    });
+
+    document.getElementById('btnExport').addEventListener('click', () => {
+      const vendidosMap = rifaData.numeros || {};
+      const total = rifaData.totalNumeros;
+
+      let csvContent = "\uFEFFNumero;Nombre Comprador;Telefono Contacto;Estado;Fecha de Venta\n";
+
+      for (let i = 1; i <= total; i++) {
+        const data = vendidosMap[String(i)];
+        if (data) {
+          csvContent += `${i};"${data.nombre}";"${data.telefono}";Vendido;"${data.fechaVenta || ''}"\n`;
+        } else {
+          csvContent += `${i};"---";"---";Disponible;""\n`;
+        }
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Reporte_${rifaData.id}_${rifaData.titulo.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    document.getElementById('btnOpenSorteo').addEventListener('click', () => {
+      document.getElementById('sorteoNumberDisplay').textContent = '--';
+      document.getElementById('sorteoWinnerInfo').classList.add('hidden');
+      modalSorteo.classList.remove('hidden');
+    });
+
+    document.getElementById('closeModalSorteo').addEventListener('click', () => modalSorteo.classList.add('hidden'));
+
+    document.getElementById('btnRunSorteo').addEventListener('click', () => {
+      const vendidosKeys = Object.keys(rifaData.numeros || {});
+      if (vendidosKeys.length === 0) {
+        return alert("Aún no hay números vendidos para iniciar el sorteo.");
+      }
+
+      const btn = document.getElementById('btnRunSorteo');
+      btn.disabled = true;
+      document.getElementById('sorteoWinnerInfo').classList.add('hidden');
+
+      const display = document.getElementById('sorteoNumberDisplay');
+      let iterations = 0;
+      const maxIterations = 35;
+
+      const interval = setInterval(() => {
+        const randomTemp = vendidosKeys[Math.floor(Math.random() * vendidosKeys.length)];
+        display.textContent = `#${randomTemp}`;
+        iterations++;
+
+        if (iterations >= maxIterations) {
+          clearInterval(interval);
+          btn.disabled = false;
+
+          const ganadorNum = vendidosKeys[Math.floor(Math.random() * vendidosKeys.length)];
+          const ganadorData = rifaData.numeros[ganadorNum];
+
+          display.textContent = `#${ganadorNum}`;
+          document.getElementById('sorteoWinnerName').textContent = `Ganador(a): ${ganadorData.nombre}`;
+          document.getElementById('sorteoWinnerPhone').textContent = `Tel: ${ganadorData.telefono}`;
+          document.getElementById('sorteoWinnerInfo').classList.remove('hidden');
+
+          confetti({
+            particleCount: 160,
+            spread: 100,
+            origin: { y: 0.6 }
+          });
+        }
+      }, 70);
+    });
+
+    document.getElementById('btnLeave').addEventListener('click', salirAlLobby);
+
+    function salirAlLobby() {
+      if (unsubscribeFirestore) unsubscribeFirestore();
+      currentRifaId = null;
+      window.history.replaceState({}, '', window.location.pathname);
+      dashboardScreen.classList.add('hidden');
+      dashboardScreen.classList.remove('flex');
+      lobbyScreen.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
